@@ -1,0 +1,58 @@
+from numba import cuda
+
+import numpy
+
+@cuda.jit
+def my_kernel( matriz_a, matriz_b, matriz_c, width):
+    # Thread id in a 1D block
+    tx = cuda.threadIdx.x
+    # Block id in a 1D grid
+    ty = cuda.blockIdx.x
+    # Block width, i.e. number of threads per block
+    bw = cuda.blockDim.x
+    
+    # Compute flattened index inside the array
+    pos = tx + ty * bw
+
+    j = 0
+    k = 0
+    soma = 0
+
+    while( pos < width):
+      j = 0
+      while( j < width):
+        k = 0
+        soma = 0
+        while( k < width):
+          soma = soma + matriz_a[pos][k] * matriz_b[k][j]
+          k = k + 1
+        j = j + 1
+        matriz_c[pos][j-1] = soma
+      soma = 0
+      pos = pos + 1
+
+# números de threads por bloco
+threads_per_block = 32
+
+matriz_a = [ [2, 3], [1, 0] ]
+matriz_b = [ [3, 1], [2, 4] ]
+a = numpy.array(matriz_a)
+b = numpy.array(matriz_b)
+matriz_c =  [ [0, 0], [0, 0] ]
+c = numpy.array(matriz_c)
+
+# número de blocos por grid
+blocks_per_grid = ( 2 + (threads_per_block - 1) )  #       N = BId * M   N / M = BId 
+
+#print( numpy.matmul(a, b) )
+
+# iniciando o kernel
+my_kernel[blocks_per_grid, threads_per_block](a, b, c, 2 )
+
+# mostra o resultado
+print(a)
+print("\n")
+print(b)
+print("\n")
+print("\n")
+print(c)
